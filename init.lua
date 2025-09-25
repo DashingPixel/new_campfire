@@ -137,10 +137,11 @@ local function cooking(pos, itemstack)
 	local meta = minetest.get_meta(pos)
 	local cooked, _ = minetest.get_craft_result({method = "cooking", width = 1, items = {itemstack}})
 	local cookable = cooked.time ~= 0
+	local cookeditem = (cooked and cookable) and ItemStack(cooked.item:to_table().name):get_definition() -- item definition
 
 	if cookable and new_campfire.cooking then
-		local eat_y = ItemStack(cooked.item:to_table().name):get_definition().on_use
-		if string.find(minetest.serialize(eat_y), "do_item_eat") and meta:get_int("cooked_time") == 0 then
+		local eat_y = cookeditem.on_use
+		if (core.serialize(cookeditem.on_use):find("do_item_eat") or cookeditem.tph_eating_success) and meta:get_int("cooked_time") == 0 then
 			meta:set_int('cooked_time', cooked.time);
 			meta:set_int('cooked_cur_time', 0);
 			local name = itemstack:get_name()
@@ -160,7 +161,6 @@ local function cooking(pos, itemstack)
 			minetest.after(cooked.time/2, function()
 				if meta:get_int("it_val") > 0 then
 
-					local item = cooked.item:to_table().name
 					minetest.after(cooked.time/2, function(item)
 						if meta:get_int("it_val") > 0 then
 							minetest.add_item({x=pos.x, y=pos.y+0.2, z=pos.z}, item)
@@ -169,7 +169,7 @@ local function cooking(pos, itemstack)
 						else
 							minetest.add_item({x=pos.x, y=pos.y+0.2, z=pos.z}, name)
 						end
-					end, item)
+					end, cookeditem.name)
 				else
 					minetest.add_item({x=pos.x, y=pos.y+0.2, z=pos.z}, name)
 				end
